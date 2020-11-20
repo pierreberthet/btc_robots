@@ -55,7 +55,7 @@ def hours_to(prod, diams=100):
 
 def draw_bonus():
 	''' return a random int between 10 and 90. Similar to the bonus function giving out diamonds every 20 hours'''
-	return np.random.randint(10, 90)
+	return np.random.randint(10, 100)
 
 
 
