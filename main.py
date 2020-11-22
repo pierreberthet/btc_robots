@@ -46,7 +46,7 @@ class v1_bot(robot):
 
 class v2_bot(robot):
 	def __init__(self):
-		super().__init__(850, 1000)
+		super().__init__(825, 1000)
 
 class v3_bot(robot):
 	def __init__(self):
@@ -198,6 +198,9 @@ if simulate:
 
 v1.set_hired(10)
 wallet_prod = 500
+notif = True
+verbose = False
+threshold = 1000
 for day in range(1, 365):
 		bonus = draw_bonus()
 		total_prod += sum([bot.get_daily_prod_diams() for bot in bots])
@@ -205,19 +208,24 @@ for day in range(1, 365):
 		wallet_prod += sum([bot.get_daily_prod_diams() for bot in bots]) + bonus
 
 		min_days, strat = get_quickest_level_up_robot(bots, int(wallet_prod))
-		print(f"Day {day}: strat is to hire {strat} bots of level {get_bots_level(bots) + 1}, level up bot expected in {min_days}")
+		if verbose:
+			print(f"Day {day}: strat is to hire {strat} bots of level {get_bots_level(bots) + 1}, level up bot expected in {min_days}")
 		current_level = get_bots_level(bots)
 
 		if strat != 0:
 			for hire in range(strat):
 				bots[current_level].hire_one()
 				wallet_prod -= bots[current_level].price
-				print(f"BOUGHT a V{current_level + 1} bot!!!")
+				print(f"day {day}: +1 V{current_level + 1} bot")
 		if get_bots_level(bots) < 5:
 			if wallet_prod >= bots[current_level + 1].price:
 				bots[current_level + 1].hire_one()
 				wallet_prod -= bots[current_level + 1].price
-				print(f"BOUGHT a V{current_level + 2} bot!!!")
+				print(f"day {day}: +1 V{current_level + 2} bot")
+
+		if wallet_btc > threshold and notif:
+			print(f"{threshold / (10**6)} btc balance reached, at day {day}")
+			threshold = threshold * 2
 
 		tracker.append({'day': day, 'bonus': bonus, 'balance_prod': wallet_prod, 'balance_btc': wallet_btc,
 						'daily_prod': sum([bot.get_daily_prod_diams() for bot in bots]),
