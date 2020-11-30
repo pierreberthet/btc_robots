@@ -144,6 +144,26 @@ def get_quickest_level_up_robot(bots, wallet_prod_balance, average=100):
 	return np.min([df[df.hired == h].wait.mean() for h in df.hired.unique()]), np.argmin([df[df.hired == h].wait.mean() for h in df.hired.unique()])
 
 
+def get_quickest_level_up_robot_v2(bots, wallet_prod_balance, average=100):
+	''' bots: list of the bots
+		wallet_prod_balance: int of the current available diamonds for buying robots
+		average: int number of simulation run to compute the mean number of days before leveling up (because random in draw_bonus())
+
+		return: min number of days before leveling up, strategy'''		
+	current_level = get_bots_level(bots)
+	res = []
+	local_bots = deepcopy(bots)
+	strat = 0
+	min_days = 0
+	if (bots[current_level + 1].price / sum([bot.get_daily_prod_diams() for bot in bots]) > bots[current_level].price / bots[current_level].get_daily_prod_diams()) and wallet_prod_balance > bots[current_level].price:
+		min_days = bots[current_level].price / bots[current_level].get_daily_prod_diams()
+		strat = 1
+	else:
+		min_days = bots[current_level + 1].price / sum([bot.get_daily_prod_diams() for bot in bots])
+		
+	return min_days, strat
+
+
 #def __init__():
 v1 = v1_bot()
 v1.set_hired(10)
@@ -168,7 +188,7 @@ bots = [v1, v2, v3, v4, v5, v6]
 total_prod = 0
 
 wallet_btc = 58
-wallet_prod = 402
+wallet_prod = 133
 
 
 tracker = []
@@ -176,6 +196,7 @@ tracker = []
 if simulate:
 
 	v1.set_hired(10)
+	v2.set_hired(1)
 	wallet_prod = 500
 	notif = True
 	verbose = False
