@@ -10,6 +10,7 @@ Created on November 19th 2020
 import pandas as pd
 import numpy as np
 from matplotlib import pyplot as plt
+import seaborn as sns
 from copy import deepcopy
 
 simulate = True
@@ -122,7 +123,7 @@ def get_waiting_days(bots, wallet_prod_balance):
 	return count
 
 
-def get_quickest_level_up_robot(bots, wallet_prod_balance, average=100):
+def get_quickest_level_up_robot_v1(bots, wallet_prod_balance, average=100):
 	''' bots: list of the bots
 		wallet_prod_balance: int of the current available diamonds for buying robots
 		average: int number of simulation run to compute the mean number of days before leveling up (because random in draw_bonus())
@@ -156,10 +157,52 @@ def get_quickest_level_up_robot_v2(bots, wallet_prod_balance, average=100):
 	strat = 0
 	min_days = 0
 	if (bots[current_level + 1].price / sum([bot.get_daily_prod_diams() for bot in bots]) > bots[current_level].price / bots[current_level].get_daily_prod_diams()) and wallet_prod_balance > bots[current_level].price:
-		min_days = bots[current_level].price / bots[current_level].get_daily_prod_diams()
+		# min_days = bots[current_level].price / bots[current_level].get_daily_prod_diams()
 		strat = 1
-	else:
-		min_days = bots[current_level + 1].price / sum([bot.get_daily_prod_diams() for bot in bots])
+	
+	min_days = (bots[current_level + 1].price -wallet_prod_balance) / sum([bot.get_daily_prod_diams() for bot in bots])
+		
+	return min_days, strat
+
+
+def get_quickest_level_up_robot_v2b(bots, wallet_prod_balance, average=100):
+	''' bots: list of the bots
+		wallet_prod_balance: int of the current available diamonds for buying robots
+		average: int number of simulation run to compute the mean number of days before leveling up (because random in draw_bonus())
+
+		return: min number of days before leveling up, strategy'''		
+	current_level = get_bots_level(bots)
+	res = []
+	local_bots = deepcopy(bots)
+	strat = 0
+	min_days = 0
+	if ((bots[current_level + 1].price - wallet_prod_balance) / sum([bot.get_daily_prod_diams() for bot in bots]) > bots[current_level].price / bots[current_level].get_daily_prod_diams()) and wallet_prod_balance > bots[current_level].price:
+		# min_days = bots[current_level].price / bots[current_level].get_daily_prod_diams()
+		strat = 1
+	
+	min_days = (bots[current_level + 1].price -wallet_prod_balance) / sum([bot.get_daily_prod_diams() for bot in bots])
+		
+	return min_days, strat
+
+
+
+def get_quickest_level_up_robot_v3(bots, wallet_prod_balance, average=100):
+	''' bots: list of the bots
+		wallet_prod_balance: int of the current available diamonds for buying robots
+		average: int number of simulation run to compute the mean number of days before leveling up (because random in draw_bonus())
+
+		return: min number of days before leveling up, strategy'''		
+	current_level = get_bots_level(bots)
+	res = []
+	local_bots = deepcopy(bots)
+	strat = 0
+	min_days = 0
+	if ((bots[current_level + 1].price - wallet_prod_balance) / sum([bot.get_daily_prod_diams() for bot in bots]) >
+		((bots[current_level + 1].price - (wallet_prod_balance - bots[current_level].price )) / (sum([bot.get_daily_prod_diams() for bot in bots]) + bots[current_level].get_daily_prod_diams()))) and wallet_prod_balance > bots[current_level].price:
+		# min_days = bots[current_level].price / bots[current_level].get_daily_prod_diams()
+		strat = 1
+	
+	min_days = (bots[current_level + 1].price -wallet_prod_balance) / sum([bot.get_daily_prod_diams() for bot in bots])
 		
 	return min_days, strat
 
@@ -184,30 +227,90 @@ dpd(v1.eph())
 
 bots = [v1, v2, v3, v4, v5, v6]
 
+tactics = [get_quickest_level_up_robot_v1, get_quickest_level_up_robot_v2, get_quickest_level_up_robot_v2b, get_quickest_level_up_robot_v3]
+tactics_names = ['strategy 1', 'strategy 2', 'strategy 2b', 'strategy 3']
+
 # init trackers
 total_prod = 0
 
-wallet_btc = 58
-wallet_prod = 133
 
+wallet_prod = 825
+wallet_btc = 445
 
 tracker = []
 
 if simulate:
 
 	v1.set_hired(10)
-	v2.set_hired(1)
-	wallet_prod = 500
+	v2.set_hired(2)
 	notif = True
-	verbose = False
+	verbose = True
 	threshold = 1000
 	for day in range(1, 365):
+		bonus = draw_bonus()
+		total_prod += sum([bot.get_daily_prod_diams() for bot in bots])
+		wallet_btc += sum([bot.get_daily_btc_diams() for bot in bots])
+		wallet_prod += sum([bot.get_daily_prod_diams() for bot in bots]) + bonus
+
+		min_days, strat = get_quickest_level_up_robot_v2(bots, int(wallet_prod))
+		if verbose:
+			print(f"Day {day}: strat is to hire {strat} bots of level {get_bots_level(bots) + 1}, level up bot expected in {min_days}")
+		current_level = get_bots_level(bots)
+
+		if strat != 0:
+			for hire in range(strat):
+				bots[current_level].hire_one()
+				wallet_prod -= bots[current_level].price
+				print(f"day {day}: +1 V{current_level + 1} bot")
+		if get_bots_level(bots) < 5:
+			if wallet_prod >= bots[current_level + 1].price:
+				bots[current_level + 1].hire_one()
+				wallet_prod -= bots[current_level + 1].price
+				print(f"day {day}: +1 V{current_level + 2} bot")
+
+		if wallet_btc > threshold and notif:
+			print(f"{threshold / (10**6)} btc balance reached, at day {day}")
+			threshold = threshold * 2
+
+		tracker.append({'day': day, 'bonus': bonus, 'balance_prod': wallet_prod, 'balance_btc': wallet_btc,
+						'daily_prod': sum([bot.get_daily_prod_diams() for bot in bots]),
+						'daily_wallet_diam': sum([bot.get_daily_btc_diams() for bot in bots])})
+	display_bots(bots)
+
+	tracker = pd.DataFrame(tracker)
+	tracker.plot()
+	plt.show()
+
+
+
+multi_sim = True
+if multi_sim:
+
+	tactics = [get_quickest_level_up_robot_v1, get_quickest_level_up_robot_v2, get_quickest_level_up_robot_v2b, get_quickest_level_up_robot_v3]
+	tactics_names = ['strategy 1', 'strategy 2', 'strategy 2b', 'strategy 3']
+	tracker = []
+
+
+	for sx, strategy in enumerate(tactics):
+		total_prod = 0
+		wallet_prod = 825
+		wallet_btc = 445
+		v1.set_hired(10)
+		v2.set_hired(2)
+		v3.set_hired(0)
+		v4.set_hired(0)
+		v5.set_hired(0)
+		v6.set_hired(0)
+		notif = True
+		verbose = False
+		threshold = 1000
+		for day in range(1, 600):
 			bonus = draw_bonus()
 			total_prod += sum([bot.get_daily_prod_diams() for bot in bots])
 			wallet_btc += sum([bot.get_daily_btc_diams() for bot in bots])
 			wallet_prod += sum([bot.get_daily_prod_diams() for bot in bots]) + bonus
 
-			min_days, strat = get_quickest_level_up_robot(bots, int(wallet_prod))
+			min_days, strat = strategy(bots, int(wallet_prod))
 			if verbose:
 				print(f"Day {day}: strat is to hire {strat} bots of level {get_bots_level(bots) + 1}, level up bot expected in {min_days}")
 			current_level = get_bots_level(bots)
@@ -227,11 +330,14 @@ if simulate:
 				print(f"{threshold / (10**6)} btc balance reached, at day {day}")
 				threshold = threshold * 2
 
-			tracker.append({'day': day, 'bonus': bonus, 'balance_prod': wallet_prod, 'balance_btc': wallet_btc,
+			tracker.append({'strategy': tactics_names[sx], 'day': day, 'bonus': bonus, 'balance_prod': wallet_prod, 'balance_btc': wallet_btc,
 							'daily_prod': sum([bot.get_daily_prod_diams() for bot in bots]),
 							'daily_wallet_diam': sum([bot.get_daily_btc_diams() for bot in bots])})
-	display_bots(bots)
+		display_bots(bots)
 
 	tracker = pd.DataFrame(tracker)
 	tracker.plot()
+
+	sns.lineplot(data=tracker, x='day', y='balance_btc', hue='strategy', alpha=.4)
+
 	plt.show()
