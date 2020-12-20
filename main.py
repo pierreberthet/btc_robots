@@ -341,3 +341,8 @@ if multi_sim:
 	sns.lineplot(data=tracker, x='day', y='balance_btc', hue='strategy', alpha=.4)
 
 	plt.show()
+
+
+'''
+Focus on the btv wallet accrual, not on the prod numbers!!!
+'''
