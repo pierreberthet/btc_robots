@@ -266,21 +266,21 @@ tactics_names = ['strategy 1', 'strategy 2', 'strategy 2b', 'strategy 3', 'Strat
 total_prod = 0
 
 
-wallet_prod = 825
-wallet_btc = 445
+wallet_prod = 490
+wallet_btc = 2363
 
 tracker = []
 
 simulate = True
 
 if simulate:
-	for tester in range(67):
-		wallet_prod = 825
-		wallet_btc = 445
+	for tester in range(14):
+		wallet_prod = 3000
+		wallet_btc = 18000
 		v1.set_hired(10)
-		v2.set_hired(4)
-		v3.set_hired(0)
-		v4.set_hired(0)
+		v2.set_hired(43)
+		v3.set_hired(33)
+		v4.set_hired(1)
 		v5.set_hired(0)
 		v6.set_hired(0)
 		notif = True
@@ -329,7 +329,7 @@ if simulate:
 
 
 
-multi_sim = False
+multi_sim = True
 if multi_sim:
 
 	tactics = [get_quickest_level_up_robot_v1, get_quickest_level_up_robot_v2, get_quickest_level_up_robot_v2b, get_quickest_level_up_robot_v3, get_quickest_level_up_robot_v4]
@@ -339,12 +339,12 @@ if multi_sim:
 
 	for sx, strategy in enumerate(tactics):
 		total_prod = 0
-		wallet_prod = 705
-		wallet_btc = 874
+		wallet_prod = 3000
+		wallet_btc = 18000
 		v1.set_hired(10)
-		v2.set_hired(4)
-		v3.set_hired(0)
-		v4.set_hired(0)
+		v2.set_hired(43)
+		v3.set_hired(33)
+		v4.set_hired(1)
 		v5.set_hired(0)
 		v6.set_hired(0)
 		notif = True
